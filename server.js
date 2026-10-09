@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import cors from 'cors';
 import {  getOffersV2 } from './utils/offers.js';
 import dotenv from 'dotenv';
+import { callGraphQl, CUSTOMER_QUERY } from './utils/graphql.js';
 dotenv.config();
 
 
@@ -51,12 +52,19 @@ const detectDeviceType = (userAgent) => {
 
 app.post('/api/v2/offer', async (req, res) => {
     try {
-
+        const {customerId} = req.body
         const deviceType = detectDeviceType(req.headers['user-agent']);
-        const offers = await getOffersV2();
-        const offerProducts = offers;
+        const customerPromise=callGraphQl(CUSTOMER_QUERY, {id: `gid://shopify/Customer/${customerId}`})
+        const offerPromise = getOffersV2();
+        const [customerResponse, offers] = await Promise.allSettled([customerPromise, offerPromise]);
+        if (offers.status === 'rejected') {
+            console.error('Error fetching offers:', offers.reason);
+            return res.status(500).json({ error: 'Failed to fetch offers' });
+        }
+        const customerData=customerResponse.status === 'fulfilled' ? customerResponse.value.data.customer : null;
+        const offerProducts = offers.value;
 
-        res.send(JSON.stringify({ offers: offerProducts, deviceType }));
+        res.send(JSON.stringify({ offers: offerProducts, deviceType,customerData }));
     }
     catch (err) {
         console.log(err)

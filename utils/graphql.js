@@ -147,3 +147,12 @@ query($id: ID!) {
         }
     }
 }`
+
+export const CUSTOMER_QUERY=`#graphql
+query($id: ID!) {
+    customer(id: $id) {
+        id
+        firstName
+        lastName
+    }
+}`
