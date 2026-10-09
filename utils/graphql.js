@@ -1,0 +1,149 @@
+import dotenv from 'dotenv'
+dotenv.config()
+
+export async function callGraphQl(query, variables = {}) {
+  const res = await fetch(`https://${process.env.SHOP_DOMAIN}/admin/api/2026-01/graphql.json`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Access-Token': process.env.ACCESS_TOKEN
+    },
+    body: JSON.stringify({ query, variables })
+  })
+  return await res.json()
+}
+
+export const mutationOrderEditBeginString = `#graphql
+mutation orderEditBegin($id: ID!) {
+  orderEditBegin(id: $id) {
+    calculatedOrder {
+      id
+      lineItems(first:50){
+        edges{
+          node{
+            id
+            title
+            quantity
+            variant{
+                id
+            }
+          }
+        }
+      }
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}`
+
+export const mutationOrderEditSetQuantityString = `#graphql
+mutation addVariantToOrder($id:ID!,$lineItemId:ID!,$restock:Boolean!,$quantity:Int!){
+  orderEditSetQuantity(id:$id, lineItemId:$lineItemId,restock:$restock,quantity: $quantity){
+    calculatedOrder {
+      id
+      addedLineItems(first:5) {
+        edges {
+          node {
+            id
+            quantity
+            originalUnitPriceSet{
+              presentmentMoney{
+                amount
+              }
+            }
+          }
+        }
+      }
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+`
+
+export const mutationOrderAddVariantString = `#graphql
+mutation addVariantToOrder($id:ID!,$variantId:ID!,$quantity:Int!){
+  orderEditAddVariant(id: $id, variantId:$variantId, quantity: $quantity){
+    calculatedOrder {
+      id
+      addedLineItems(first:5) {
+        edges {
+          node {
+            id
+            quantity
+          }
+        }
+      }
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}`
+
+export const mutationOrderEditCommitString = `#graphql
+mutation commitEdit($id:ID!) {
+  orderEditCommit(id:$id, notifyCustomer: false, staffNote: "Updated by app") {
+    order {
+      id
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+`
+
+export const queryOrderByReferenceId = `#graphql
+query ($query: String!) {
+  orders(first:1,query:$query){
+    nodes{
+      id
+      totalPriceSet{
+        presentmentMoney{
+          amount
+        }
+      }
+      lineItems(first:50){
+        nodes{
+          product{
+            id
+            title
+          }
+        }
+      }
+      customAttributes{
+          key
+          value
+        }
+    }
+  }
+}
+`
+
+export const PRODUCT_QUERY = `#graphql
+query($id: ID!) {
+    product(id: $id) {
+        options(first:10){
+            name
+            values
+        }
+        variants(first:250){
+            nodes{
+                id
+                price
+                selectedOptions{
+                    name
+                    value
+                }
+                inventoryQuantity
+            }
+        }
+    }
+}`
